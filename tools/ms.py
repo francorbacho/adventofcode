@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 #
-# bytecode interpreter that only has 5 instructions: put, mov, beq, cmp, add.
+# bytecode interpreter that only has 8 instructions: put, mov, beq, blt, cmp,
+# add, sub, jmp, hlt.
 
 from __future__ import annotations
 
-import re
 import argparse
+import re
+import sys
 
 class Value:
     def __init__(self, value: int, *, is_ptr = False) -> None:
@@ -24,6 +26,7 @@ class Value:
 class VM:
     def __init__(self):
         self.eqflag = False
+        self.ltflag = False
         self.ip = 0
         self._data = []
 
@@ -38,7 +41,7 @@ class VM:
         return self._data[key]
 
     def put(self, dst: Value) -> None:
-        print(chr(dst.resolve(self)), end='')
+        print(chr(dst.resolve(self)), flush=True, end='')
 
     def mov(self, dst: Value, src: Value) -> None:
         src = src.resolve(self)
@@ -50,10 +53,20 @@ class VM:
         dst = dst.resolve(self)
         self[dst] += src
 
+    def sub(self, dst: Value, src: Value) -> None:
+        src = src.resolve(self)
+        dst = dst.resolve(self)
+        self[dst] -= src
+
     def cmp(self, lhs: Value, rhs: Value) -> None:
         lhs = lhs.resolve(self)
         rhs = rhs.resolve(self)
         self.eqflag = lhs == rhs
+        self.ltflag = lhs < rhs
+
+    def blt(self, val: Value) -> None:
+        if self.ltflag:
+            self.ip = val.resolve(self)
 
     def beq(self, val: Value) -> None:
         if self.eqflag:
@@ -75,20 +88,27 @@ with open(args.filename, 'r') as f:
     lines = f.readlines()
 
 skip_spaces = r'\s*'
-op_re = r'put|mov|beq|cmp|add'
+op_re = r'put|mov|beq|blt|cmp|add|sub|jmp|hlt'
 arg_re = r'\*?0x[0-9a-fA-F]+'
 
-lang_regex = f'({op_re}){skip_spaces}({arg_re}){skip_spaces}({arg_re})?'
+lang_regex = f'({op_re}){skip_spaces}({arg_re})?{skip_spaces}({arg_re})?'
 
 vm = VM()
 
-for line in lines:
+while vm.ip < len(lines):
+    line = lines[vm.ip]
+    vm.ip += 1
+
     line = line.split('#')[0]
     line = line.strip()
     if line == '':
         continue
 
     m = re.search(lang_regex, line)
+    if m is None:
+        print(f'could not parse line: "{line}"', file=sys.stderr)
+        sys.exit(1)
+
     op = m.group(1)
     arg1 = m.group(2)
     arg2 = m.group(3)
@@ -108,13 +128,29 @@ for line in lines:
         assert arg1 is not None, 'add with no arguments'
         assert arg2 is not None, 'add with one argument'
         vm.add(arg1, arg2)
+    elif op == 'sub':
+        assert arg1 is not None, 'sub with no arguments'
+        assert arg2 is not None, 'sub with one argument'
+        vm.sub(arg1, arg2)
     elif op == 'beq':
         assert arg1 is not None, 'beq with no arguments'
         assert arg2 is not None, 'beq with one argument'
         vm.beq(arg1, arg2)
+    elif op == 'blt':
+        assert arg1 is not None, 'blt with no arguments'
+        assert arg2 is None, 'blt with two arguments'
+        vm.blt(arg1)
     elif op == 'cmp':
         assert arg1 is not None, 'cmp with no arguments'
         assert arg2 is not None, 'cmp with one argument'
         vm.cmp(arg1, arg2)
+    elif op == 'jmp':
+        assert arg1 is not None, 'jmp with no arguments'
+        assert arg2 is None, 'jmp with two arguments'
+        vm.jmp(arg1)
+    elif op == 'hlt':
+        assert arg1 is None, 'hlt with arguments'
+        assert arg2 is None, 'hlt with arguments'
+        break
     else:
         assert False
