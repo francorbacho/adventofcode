@@ -19,3 +19,13 @@ for winning, mine in lines:
 
 print(f"\n".join(str(line) for line in lines))
 print(f"score :: {score}")
+
+def part2(lines, lo, hi, indent = 0):
+    total = hi - lo
+    for i, (winning, mine) in enumerate(lines[lo:hi]):
+        matching = sum(int(scratch in winning) for scratch in mine)
+        # print("\t" * indent + f"card #{1 + i + lo} :: {matching}, so :: {lo + 1} to {lo + 1 + matching}")
+        total += part2(lines, i + lo + 1, i + lo + 1 + matching, indent + 1)
+    return total
+
+print(f"scratchcards :: {part2(lines, 0, len(lines))}")
