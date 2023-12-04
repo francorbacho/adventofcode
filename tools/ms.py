@@ -31,11 +31,13 @@ class VM:
         self._data = []
 
     def __setitem__(self, key, value):
+        assert key >= 0
         while key >= len(self._data):
             self._data.append(0)
         self._data[key] = value
 
     def __getitem__(self, key):
+        assert key >= 0
         if key >= len(self._data):
             return 0
         return self._data[key]
