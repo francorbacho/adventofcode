@@ -75,82 +75,92 @@ class VM:
     def jmp(self, val: Value) -> None:
         self.ip = val.resolve(self)
 
-parser = argparse.ArgumentParser(
-    prog='ms',
-    description='bytecode interpreter',
-)
 
-parser.add_argument('filename')
+def run(vm: VM, lines: list[str]):
+    skip_spaces = r'\s*'
+    op_re = r'put|mov|beq|blt|cmp|add|sub|jmp|hlt'
+    arg_re = r'\*?0x[0-9a-fA-F]+'
 
-args = parser.parse_args()
+    lang_regex = f'({op_re}){skip_spaces}({arg_re})?{skip_spaces}({arg_re})?'
 
-with open(args.filename, 'r') as f:
-    lines = f.readlines()
+    while vm.ip < len(lines):
+        line = lines[vm.ip]
+        vm.ip += 1
 
-skip_spaces = r'\s*'
-op_re = r'put|mov|beq|blt|cmp|add|sub|jmp|hlt'
-arg_re = r'\*?0x[0-9a-fA-F]+'
+        line = line.split('#')[0]
+        if line == '':
+            continue
 
-lang_regex = f'({op_re}){skip_spaces}({arg_re})?{skip_spaces}({arg_re})?'
+        m = re.search(lang_regex, line)
+        if m is None:
+            print(f'could not parse line: "{line}"', file=sys.stderr)
+            sys.exit(1)
 
-vm = VM()
+        op = m.group(1)
+        arg1 = m.group(2)
+        arg2 = m.group(3)
 
-while vm.ip < len(lines):
-    line = lines[vm.ip]
-    vm.ip += 1
+        arg1 = None if arg1 is None else Value.from_str(arg1)
+        arg2 = None if arg2 is None else Value.from_str(arg2)
 
-    line = line.split('#')[0]
-    line = line.strip()
-    if line == '':
-        continue
+        if op == 'put':
+            assert arg1 is not None, 'put with no arguments'
+            assert arg2 is None, 'put with more than one argument'
+            vm.put(arg1)
+        elif op == 'mov':
+            assert arg1 is not None, 'mov with no arguments'
+            assert arg2 is not None, 'mov with one argument'
+            vm.mov(arg1, arg2)
+        elif op == 'add':
+            assert arg1 is not None, 'add with no arguments'
+            assert arg2 is not None, 'add with one argument'
+            vm.add(arg1, arg2)
+        elif op == 'sub':
+            assert arg1 is not None, 'sub with no arguments'
+            assert arg2 is not None, 'sub with one argument'
+            vm.sub(arg1, arg2)
+        elif op == 'beq':
+            assert arg1 is not None, 'beq with no arguments'
+            assert arg2 is not None, 'beq with one argument'
+            vm.beq(arg1, arg2)
+        elif op == 'blt':
+            assert arg1 is not None, 'blt with no arguments'
+            assert arg2 is None, 'blt with two arguments'
+            vm.blt(arg1)
+        elif op == 'cmp':
+            assert arg1 is not None, 'cmp with no arguments'
+            assert arg2 is not None, 'cmp with one argument'
+            vm.cmp(arg1, arg2)
+        elif op == 'jmp':
+            assert arg1 is not None, 'jmp with no arguments'
+            assert arg2 is None, 'jmp with two arguments'
+            vm.jmp(arg1)
+        elif op == 'hlt':
+            assert arg1 is None, 'hlt with arguments'
+            assert arg2 is None, 'hlt with arguments'
+            break
+        else:
+            assert False
 
-    m = re.search(lang_regex, line)
-    if m is None:
-        print(f'could not parse line: "{line}"', file=sys.stderr)
-        sys.exit(1)
+def main():
+    parser = argparse.ArgumentParser(
+        prog='ms',
+        description='bytecode interpreter',
+    )
 
-    op = m.group(1)
-    arg1 = m.group(2)
-    arg2 = m.group(3)
+    parser.add_argument('filename')
 
-    arg1 = None if arg1 is None else Value.from_str(arg1)
-    arg2 = None if arg2 is None else Value.from_str(arg2)
+    args = parser.parse_args()
 
-    if op == 'put':
-        assert arg1 is not None, 'put with no arguments'
-        assert arg2 is None, 'put with more than one argument'
-        vm.put(arg1)
-    elif op == 'mov':
-        assert arg1 is not None, 'mov with no arguments'
-        assert arg2 is not None, 'mov with one argument'
-        vm.mov(arg1, arg2)
-    elif op == 'add':
-        assert arg1 is not None, 'add with no arguments'
-        assert arg2 is not None, 'add with one argument'
-        vm.add(arg1, arg2)
-    elif op == 'sub':
-        assert arg1 is not None, 'sub with no arguments'
-        assert arg2 is not None, 'sub with one argument'
-        vm.sub(arg1, arg2)
-    elif op == 'beq':
-        assert arg1 is not None, 'beq with no arguments'
-        assert arg2 is not None, 'beq with one argument'
-        vm.beq(arg1, arg2)
-    elif op == 'blt':
-        assert arg1 is not None, 'blt with no arguments'
-        assert arg2 is None, 'blt with two arguments'
-        vm.blt(arg1)
-    elif op == 'cmp':
-        assert arg1 is not None, 'cmp with no arguments'
-        assert arg2 is not None, 'cmp with one argument'
-        vm.cmp(arg1, arg2)
-    elif op == 'jmp':
-        assert arg1 is not None, 'jmp with no arguments'
-        assert arg2 is None, 'jmp with two arguments'
-        vm.jmp(arg1)
-    elif op == 'hlt':
-        assert arg1 is None, 'hlt with arguments'
-        assert arg2 is None, 'hlt with arguments'
-        break
-    else:
-        assert False
+    with open(args.filename, 'r') as f:
+        lines = f.readlines()
+        lines = [line.strip() for line in lines]
+
+    vm = VM()
+    try:
+        run(vm, lines)
+    except KeyboardInterrupt:
+        print(f"keyboard interrupt on line {vm.ip}: '{lines[vm.ip]}'", file=sys.stderr)
+
+if __name__ == '__main__':
+    main()
