@@ -81,16 +81,14 @@ def process_seed(seed):
         source = destination
     return destination
 
-min_seed = math.inf
-min_location = math.inf
-for i, seed in enumerate(seeds):
-    destination = process_seed(seed)
-    if min_location > destination:
-        min_location = destination
-        min_seed = seed
-    print(f"seed #{i + 1} :: {seed} :: {destination}")
+def part1():
+    min_loc = math.inf
+    for i, seed in enumerate(seeds):
+        destination = process_seed(seed)
+        min_loc = min(min_loc, destination)
+    return min_loc
 
-print(f"min seed :: {min_seed} with location :: {min_location}")
+print(f"part one :: {part1()}")
 
 def process_range(maps: list[Map], imap: int, range_start: int, range_length: int) -> list[tuple[int, int]]:
     if imap == len(maps) - 1:
@@ -100,12 +98,14 @@ def process_range(maps: list[Map], imap: int, range_start: int, range_length: in
         res += process_range(maps, imap + 1, new_range_start, new_range_length)
     return res
 
-min_loc = math.inf
-for i in range(0, len(seeds), 2):
-    seed_range_start = seeds[i]
-    seed_range_length = seeds[i + 1]
-    range_start, range_length = seed_range_start, seed_range_length
-    res = process_range(maps, 0, range_start, range_length)
-    min_loc = min(min_loc, min(loc_start for (loc_start, _) in res))
+def part2():
+    min_loc = math.inf
+    for i in range(0, len(seeds), 2):
+        seed_range_start = seeds[i]
+        seed_range_length = seeds[i + 1]
+        range_start, range_length = seed_range_start, seed_range_length
+        res = process_range(maps, 0, range_start, range_length)
+        min_loc = min(min_loc, min(loc_start for (loc_start, _) in res))
+    return min_loc
 
-print(f"result is :: {min_loc}")
+print(f"part two :: {part2()}")
