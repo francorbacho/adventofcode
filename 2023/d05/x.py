@@ -22,12 +22,6 @@ class Conversion:
         assert self.can_do(inp)
         return self.output_range_start + inp - self.input_range_start
 
-    # returns true if it can emit at least one value of the output range provided
-    def can_emit_output_range(self, wanted_range_start: int, length: int) -> bool:
-        if self.output_range_start <= wanted_range_start < self.output_range_start + self.length:
-            return True
-        return wanted_range_start <= self.output_range_start <= wanted_range_start + length
-
     def __repr__(self) -> str:
         return f"{self.input_range_start} -> {self.output_range_start} :: {self.length}"
 
@@ -66,34 +60,6 @@ class Map:
                 res.append((start, length))
                 break
         return res
-
-    def min_output_range(self) -> int:
-        mor = math.inf
-        mori = math.inf
-        for i, conversion in enumerate(self.conversions):
-            if mor > conversion.output_range_start:
-                mor = conversion.output_range_start
-                mori = i
-        return self.conversions[mori]
-
-    def who_maps_to_output_range(self, output_range_start: int, length: int) -> list[Conversion]:
-        result = []
-        for conversion in self.conversions:
-            if conversion.can_emit_output_range(output_range_start, length):
-                result.append(conversion)
-        return result
-
-    def smallest_unmapped_input(self) -> int:
-        small = 0
-        i = 0
-        while i < len(self.conversions):
-            conv = self.conversions[i]
-            if conv.input_range_start <= small < conv.input_range_start + conv.length:
-                small = conv.input_range_start + conv.length
-                i = 0
-                continue
-            i += 1
-        return small
 
 lines = [line.strip() for line in fileinput.input()]
 lines = "\n".join(lines).split("\n\n")
