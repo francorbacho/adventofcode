@@ -40,4 +40,5 @@ res = 0
 for i, cardbid in enumerate(pairs):
     res += (i + 1) * cardbid.bid
 
+print("\n".join(f"{pair.card} — {pair.power}" for pair in pairs))
 print(f"res :: {res}")
