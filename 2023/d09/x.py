@@ -12,8 +12,12 @@ def extrapolate(a: list[int]) -> int:
     extrapolation = extrapolate(diff_seq(a))
     return a[-1] + extrapolation
 
-lines = [line for line in fileinput.input()]
-seqs = [[int(node) for node in line.split(' ')] for line in lines]
+def backwards_extrapolate(a: list[int]) -> int:
+    if all(node == 0 for node in a):
+        return 0
+
+    extrapolation = backwards_extrapolate(diff_seq(a))
+    return a[0] - extrapolation
 
 def part1():
     res = 0
@@ -22,4 +26,15 @@ def part1():
 
     print(f"res :: {res}")
 
+def part2():
+    res = 0
+    for seq in seqs:
+        res += backwards_extrapolate(seq)
+
+    print(f"res :: {res}")
+
+lines = [line for line in fileinput.input()]
+seqs = [[int(node) for node in line.split(' ')] for line in lines]
+
 part1()
+part2()
