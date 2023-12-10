@@ -43,8 +43,7 @@ def find_starting_point(world: list[list[str]]) -> tuple[int, int]:
             return row, col
     assert False, "Unable to find S"
 
-def part1(world: list[list[str]]) -> int:
-    sys.setrecursionlimit(15000)
+def find_loopback_tiles(world: list[list[str]]) -> str:
     rowcol = find_starting_point(world)
 
     for pipe in "|-LJ7F":
@@ -57,7 +56,32 @@ def part1(world: list[list[str]]) -> int:
         conns = get_connections(rowcol, pipe)
         if any(rowcol not in get_connections(conn, world[conn[0]][conn[1]]) for conn in conns):
             continue
-        return distmap[key_of_highest]
+        return distmap, key_of_highest
 
+    assert False, "unreachable"
+
+def part1(world: list[list[str]]) -> int:
+    distmap, furthest_point = find_loopback_tiles(world)
+    return distmap[furthest_point]
+
+def part2(world: list[list[str]]) -> int:
+    distmap, _ = find_loopback_tiles(world)
+    loopback = set(distmap)
+
+    res = 0
+    for row, line in enumerate(world):
+        inside_loopback = False
+
+        for col, c in enumerate(line):
+            if (row, col) in loopback and c not in "-F7":
+                inside_loopback = not inside_loopback
+                continue
+            if inside_loopback and (row, col) not in loopback:
+                res += 1
+    return res
+
+sys.setrecursionlimit(15000)
 lines = [[*line.strip()] for line in fileinput.input() if line.strip() != ""]
-print(f"part1 :: {part1(lines)}")
+
+# print(f"part1 :: {part1(lines)}")
+print(f"part2 :: {part2(lines)}")
